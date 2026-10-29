@@ -1,0 +1,2282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>폐역 — 1997년 겨울</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding:wght@400;700&family=Noto+Serif+KR:wght@300;400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0c0b;
+    --surface: #141312;
+    --surface2: #1a1917;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #d4cfc8;
+    --text-dim: #7a756e;
+    --text-faint: #3d3a36;
+    --amber: #c8954a;
+    --amber-dim: #7a5a2a;
+    --red: #b85050;
+    --green: #5a8a5a;
+    --font-mono: 'Nanum Gothic Coding', monospace;
+    --font-serif: 'Noto Serif KR', serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  /* 헤더 */
+  #title-area {
+    margin-bottom: 2rem;
+    border-bottom: 0.5px solid var(--border);
+    padding-bottom: 1rem;
+  }
+  #title-area h1 {
+    font-family: var(--font-serif);
+    font-weight: 300;
+    font-size: 22px;
+    color: var(--text);
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  #title-area .subtitle {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+
+  #title-area .intro {
+    margin-top: 0.75rem;
+    font-family: var(--font-serif);
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--text-dim);
+    line-height: 1.9;
+    letter-spacing: 0.02em;
+  }
+
+  /* 시간 표시 */
+  #time-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 0.5px solid var(--border);
+  }
+  #time-day-val {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+  #time-clock-val {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--amber);
+    letter-spacing: 0.05em;
+  }
+
+  /* 스탯 */
+  #stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 1.5rem;
+  }
+  .stat {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 10px 8px;
+  }
+  .stat-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .stat-val {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .stat-val.low { color: var(--red); }
+  .stat-val.warn { color: var(--amber); }
+  .stat-unit {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-left: 2px;
+  }
+
+  /* 로그 */
+  #log-area {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    height: 180px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    position: relative;
+    scroll-behavior: smooth;
+  }
+  #day-label {
+    font-size: 10px;
+    color: var(--amber-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    padding-bottom: 4px;
+  }
+  .log-line {
+    font-size: 13px;
+    line-height: 1.9;
+    transition: color 0.6s;
+  }
+  .log-line.current { color: var(--text); }
+  .log-line.old { color: var(--text-dim); }
+  .log-line.faint { color: var(--text-faint); }
+
+  /* 탭 바 */
+  #tab-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .tab-btn {
+    flex: 1;
+    background: transparent;
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: all 0.15s;
+  }
+  .tab-btn.active {
+    background: var(--surface2);
+    border-color: var(--border2);
+    color: var(--text);
+  }
+  .tab-btn.locked {
+    color: var(--text-faint);
+    border-color: var(--border);
+    cursor: not-allowed;
+  }
+  .tab-btn.unlocked-new {
+    border-color: var(--amber-dim);
+    color: var(--amber);
+    animation: unlockPulse 1.5s ease 2;
+  }
+
+  /* 탭 패널 */
+  .tab-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  /* 액션 버튼 */
+  .action-btn {
+    background: transparent;
+    border: 0.5px solid var(--border2);
+    border-radius: 6px;
+    padding: 11px 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .action-btn:hover { background: var(--surface); }
+  .action-btn:active { transform: scale(0.98); }
+  .action-btn:disabled { color: var(--text-faint); border-color: var(--border); cursor: not-allowed; transform: none; }
+  .action-btn.locked { color: var(--text-faint); border-color: var(--border); }
+  .action-btn.locked .lock-hint { color: var(--text-faint); font-size: 10px; }
+  .action-btn.unlocked-new { border-color: var(--amber-dim); color: var(--amber); animation: unlockPulse 1.5s ease 2; }
+  .cost { color: var(--text-dim); font-size: 11px; margin-left: 6px; }
+
+  /* 인벤토리 토글 */
+  #inventory-area {
+    margin-top: 8px;
+    border-top: 0.5px solid var(--border);
+    padding-top: 8px;
+  }
+  #inventory-toggle {
+    width: 100%;
+    background: transparent;
+    border: none;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: left;
+    cursor: pointer;
+    padding: 4px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #inventory-toggle:hover { color: var(--text); }
+  #inv-count { color: var(--amber-dim); margin-left: 4px; }
+  #inv-arrow { color: var(--text-faint); transition: transform 0.2s; }
+  #inv-arrow.open { transform: rotate(180deg); }
+  #inventory-content {
+    padding-top: 8px;
+  }
+  #inventory-label, #collection-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+    margin-top: 8px;
+  }
+  #inventory-label { margin-top: 0; }
+  #inventory-list, #collection-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .inv-tag {
+    font-size: 11px;
+    color: var(--amber);
+    border: 0.5px solid var(--amber-dim);
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+  .col-tag {
+    font-size: 11px;
+    color: var(--text-dim);
+    border: 0.5px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+  .inv-empty { font-size: 11px; color: var(--text-faint); }
+
+  /* 게임오버 */
+  #event-box {
+    background: var(--surface2);
+    border: 0.5px solid var(--border2);
+    border-left: 2px solid var(--amber-dim);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    font-size: 13px;
+    line-height: 1.9;
+    color: var(--text);
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .event-tag {
+    font-size: 10px;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  /* 버튼 공통 */
+  button {
+    font-family: var(--font-mono);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  button:active { transform: scale(0.98); }
+
+  /* 선택지 버튼 */
+  #choices {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 1rem;
+  }
+  .choice-btn {
+    background: transparent;
+    border: 0.5px solid var(--border2);
+    border-radius: 6px;
+    padding: 11px 14px;
+    font-size: 13px;
+    color: var(--text);
+    text-align: left;
+  }
+  .choice-btn:hover { background: var(--surface2); }
+  .choice-btn::before { content: '▸ '; color: var(--amber-dim); }
+
+  /* 쿨타임 바 */
+  #cooldown-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  #cooldown-bar-wrap {
+    flex: 1;
+    height: 2px;
+    background: var(--surface2);
+    border-radius: 2px;
+  }
+  #cooldown-bar {
+    height: 2px;
+    background: var(--text-dim);
+    border-radius: 2px;
+    width: 100%;
+  }
+  #cooldown-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    min-width: 40px;
+    text-align: right;
+  }
+
+  /* 게임오버 */
+  #gameover {
+    display: none;
+    text-align: center;
+    padding: 2rem 0;
+    animation: fadeIn 0.5s ease;
+  }
+  #gameover h2 {
+    font-family: var(--font-serif);
+    font-weight: 300;
+    font-size: 22px;
+    color: var(--text);
+    margin-bottom: 1rem;
+    letter-spacing: 0.05em;
+  }
+  #gameover p {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.9;
+    margin-bottom: 2rem;
+    max-width: 340px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #gameover .restart-btn {
+    background: transparent;
+    border: 0.5px solid var(--border2);
+    border-radius: 6px;
+    padding: 10px 28px;
+    font-size: 13px;
+    color: var(--text);
+  }
+  #gameover .restart-btn:hover { background: var(--surface); }
+
+  /* 엔딩 */
+  #gameover.ending h2 { color: var(--amber); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* 스크롤바 */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="title-area">
+    <h1>폐역 廢驛</h1>
+    <div class="subtitle">1997년 겨울 — 마지막 역무원</div>
+    <div class="intro">1997년 겨울, 폐선 통보를 받은 산골 간이역. 당신은 자신이 누군지도, 역무원으로 남은 이유도 모른 채 이 곳에 머물고 있다. 밤마다 누군가 온다 — 산 사람인지 아닌지는 알 수 없다. 석탄이 다 떨어지기 전에, 이 역이 무엇인지 알게 될까.</div>
+  </div>
+
+  <div id="main">
+    <div id="time-display">
+      <span id="time-day-val">1일째</span>
+      <span id="time-clock-val">오후 11:00</span>
+    </div>
+    <div id="stats">
+      <div class="stat">
+        <div class="stat-label">석탄</div>
+        <div class="stat-val" id="coal-val">12</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">공덕</div>
+        <div class="stat-val" id="trust-val">5</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">업</div>
+        <div class="stat-val" id="suspicion-val">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">온기</div>
+        <div class="stat-val" id="warmth-text-val">●●●</div>
+      </div>
+    </div>
+
+    <div id="log-area">
+      <div id="day-label">밤 — 역사 내부</div>
+      <div id="log">
+        <div class="log-line current">1997년 겨울. 폐선 통보를 받은 산골 간이역.</div>
+        <div class="log-line current">당신은 자신이 누군지도, 왜 여기 있는지도 모른다. 그냥 남아 있다.</div>
+        <div class="log-line current">석탄 난로가 꺼지면 오래 버티지 못할 것 같은 기분이 든다.</div>
+      </div>
+    </div>
+
+    <div id="event-box"></div>
+    <div id="choices"></div>
+
+    <div id="cooldown-row">
+      <div id="cooldown-bar-wrap"><div id="cooldown-bar"></div></div>
+      <div id="cooldown-label">창고 잠금</div>
+    </div>
+
+    <!-- 탭 구조 -->
+    <div id="tab-bar">
+      <button class="tab-btn active" data-tab="inside">역사 내부</button>
+      <button class="tab-btn locked" data-tab="platform">플랫폼</button>
+      <button class="tab-btn locked" data-tab="outside">역 밖</button>
+    </div>
+
+    <div id="tab-inside" class="tab-pane active">
+      <button class="action-btn" id="btn-stoke">난로에 석탄 넣기<span class="cost">−2 석탄 · 15분</span></button>
+      <button class="action-btn" id="btn-gather">창고 뒤지기<span class="cost">+1~3 석탄 / 위험 · 45분</span></button>
+      <button class="action-btn" id="btn-wait">밤을 기다리다<span class="cost">1시간 경과</span></button>
+      <button class="action-btn" id="btn-office">역무실을 살펴본다<span class="cost">30분</span></button>
+      <button class="action-btn locked" id="btn-inner-room" disabled style="display:none">안쪽 방<span class="cost">열쇠 필요</span></button>
+    </div>
+
+    <div id="tab-platform" class="tab-pane" style="display:none">
+      <button class="action-btn" id="btn-platform">플랫폼으로 나간다<span class="cost">1시간</span></button>
+    </div>
+
+    <div id="tab-outside" class="tab-pane" style="display:none">
+      <button class="action-btn" id="btn-outside">역 밖으로 나가본다<span class="cost">2시간 · 온기−1</span></button>
+    </div>
+
+    <!-- 소지품/수집품 토글 -->
+    <div id="inventory-area">
+      <button id="inventory-toggle">소지품 · 수집품 <span id="inv-count"></span><span id="inv-arrow">▾</span></button>
+      <div id="inventory-content" style="display:none">
+        <div id="inventory-label">소지품</div>
+        <div id="inventory-list"><span class="inv-empty">없음</span></div>
+        <div id="collection-label">수집품</div>
+        <div id="collection-list"><span class="inv-empty">없음</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameover">
+    <h2 id="go-title">역사가 꺼졌다</h2>
+    <p id="go-msg"></p>
+    <button class="restart-btn" onclick="resetGame()">다시 시작</button>
+  </div>
+</div>
+
+<script>
+const state = {
+  coal: 12, trust: 5, suspicion: 0, warmth: 5, day: 1,
+  minutes: 23*60,
+  eventPending: false,
+  inventory: [],
+  collection: [],
+  unlocked: { platform: false, outside: false },
+  flags: { notebookRead: false, trainFlag: 0, oldManCount: 0, oldManWarm: false, childCount: 0, childWarm: false, coupleCount: 0, coupleWarm: false, photoCount: 0, photoWarm: false, dogCount: 0, dogWarm: false, motherRecognized: false, motherFarewell: false, lettersBurned: 0, innerRoomOpened: false, innerRoomDesk: false, innerRoomDrawer: false }
+};
+
+const EVENTS = [
+  {
+    id: 'old_man', tag: '밤 손님',
+    desc: '새벽 2시. 노인 하나가 플랫폼에 서 있다. 눈도 쌓이지 않은 신발. 어디서 왔는지 모른다.',
+    choices: [
+      { text: '안으로 들여보낸다', fn: () => {
+        state.flags.oldManCount++;
+        log('노인이 들어와 난로 앞에 앉았다. 아무 말도 하지 않는다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '노인은 불을 보고 있다. 석탄 1장을 쓰고 있다.',
+          choices: [
+            { text: '차를 내린다 (석탄 −1)', fn: () => {
+              state.coal = Math.max(0, state.coal-1);
+              state.trust++;
+              state.flags.oldManWarm = true;
+              log('노인이 찻잔을 두 손으로 감쌌다. 아무 말이 없었다. 얼마나 지났을까, 자리를 보니 사라지고 없었다. 찻잔이 깨끗이 씻겨 있었다.');
+            }},
+            { text: '이름을 묻는다', fn: () => {
+              state.suspicion++;
+              log('노인이 오래 생각하다 말했다. "잊어버렸어요." 더 묻지 않았다. 어느 순간 노인은 없었다.');
+            }},
+            { text: '그냥 난로 옆에 둔다', fn: () => {
+              state.trust++;
+              state.flags.oldManWarm = true;
+              state.coal--;
+              log('노인이 밤새 난로 앞에 있었다. 아침이 되자 사라졌다. 담요가 바닥에 반듯하게 개어져 있었다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '문을 잠근다', fn: () => {
+        state.flags.oldManCount++;
+        state.suspicion++;
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '노인이 유리문 너머로 당신을 바라본다. 표정이 없다.',
+          choices: [
+            { text: '창문으로 지켜본다', fn: () => {
+              state.suspicion++;
+              state.flags.trainFlag = Math.min(state.flags.trainFlag + 1, 3);
+              log('노인이 플랫폼 끝까지 걸어갔다. 선로 쪽으로 사라졌다. 발자국이 없었다.');
+            }},
+            { text: '외면한다', fn: () => {
+              log('한참 후 창밖을 봤을 때 노인은 없었다. 어디로 갔는지 모른다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '플랫폼으로 나가 말을 건다', fn: () => {
+        state.flags.oldManCount++;
+        state.warmth = Math.max(state.warmth-1, 0);
+        log('노인이 당신을 보고 고개를 든다. 눈이 쌓이지 않는 신발이 가까이서 더 잘 보인다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '노인이 기다린다.',
+          choices: [
+            { text: '"어디서 오셨어요?"', fn: () => {
+              state.suspicion++;
+              log('노인이 잠깐 생각하다 말했다. "여기서요." 더 이상 말하지 않았다.');
+            }},
+            { text: '"들어오세요, 춥지 않으세요?"', fn: () => {
+              state.trust++;
+              state.flags.oldManWarm = true;
+              state.coal--;
+              log('노인이 고개를 저었다. "괜찮았어요." 과거형이었다. 그래도 따라 들어왔다. 새벽까지 난로 앞에 있다가 사라졌다.');
+            }},
+            { text: '그냥 바라본다', fn: () => {
+              state.trust++;
+              log('노인이 먼저 입을 열었다. "오래 버텨요." 그게 전부였다. 돌아서서 어둠 속으로 걸어갔다.');
+            }},
+          ]
+        }), 300);
+      }},
+    ]
+  },
+  {
+    id: 'old_man_2', tag: '밤 손님',
+    desc: '노인이 또 왔다. 이번엔 플랫폼이 아니라 대합실 문 앞에 서 있다. 먼저 문을 두드렸다.',
+    choices: [
+      { text: '문을 연다', fn: () => {
+        state.flags.oldManCount++;
+        log('노인이 들어왔다. 지난번보다 조금 달라 보인다. 당신을 보는 눈이 다르다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '노인이 자리에 앉기 전에 말했다. "또 있었군요."',
+          choices: [
+            { text: '"또 오셨네요"라고 한다', fn: () => {
+              state.trust++;
+              log('"그랬죠." 노인이 난로 앞에 앉았다. 한참 후 물었다. "이 역 오래됐나요?" 당신은 모른다고 했다. "그렇군요. 알지 못하는 편이 좋을지도 모르죠." 노인이 말했다.');
+            }},
+            { text: '"어떻게 제 이름을 아세요?" (공덕 12 이상일 때)', fn: () => {
+              if(state.trust < 12){
+                log('노인이 고개를 갸웃한다. 이름을 말한 적이 없는데. 아직 모르는 것 같다.');
+              } else {
+                state.suspicion++;
+                log('노인이 잠시 멈췄다. "알고 있었어요." 더 설명하지 않았다. 새벽이 되기 전에 나갔다.');
+              }
+            }},
+            { text: '"열차가 왜 안 오는지 아세요?"', fn: () => {
+              state.flags.trainFlag = Math.min(state.flags.trainFlag + 1, 3);
+              log('노인이 오래 생각하다 말했다. "왔었어요." 과거형이었다. "언제요?" 묻자 대답하지 않았다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '문을 잠근다', fn: () => {
+        state.suspicion++;
+        log('노인이 문을 한 번 더 두드렸다. 열지 않았다. 소리가 멈췄다. 한참 후 창밖을 봤을 때 아무도 없었다.');
+      }},
+    ]
+  },
+  {
+    id: 'old_man_3', tag: '밤 손님',
+    desc: '노인이 세 번째로 왔다. 이번엔 문도 두드리지 않았다. 어느 순간 난로 앞에 앉아 있었다.',
+    choices: [
+      { text: '아무 말 없이 옆에 앉는다', fn: () => {
+        state.flags.oldManCount++;
+        state.trust++;
+        log('둘 다 아무 말이 없었다. 난로 소리만 들렸다. 한참 후 노인이 말했다. "이 역은 원래 여기 없었어요." 그게 전부였다. 얼마나 지났을까, 노인은 없었다. 찻잔 하나가 새로 놓여 있었다.');
+      }},
+      { text: '"여기 없었다니, 무슨 말이에요?"', fn: () => {
+        state.flags.oldManCount++;
+        state.suspicion++;
+        log('노인이 당신을 봤다. "당신도 알고 있었어요." 더 이상 말하지 않았다. 새벽이 오기 전에 사라졌다. 발자국이 없었다.');
+      }},
+    ]
+  },
+  {
+    id: 'child', tag: '밤 손님',
+    desc: '자정. 아이 하나가 대합실 구석에 앉아 있다. 언제부터 있었는지 모른다. 울지도 않는다.',
+    choices: [
+      { text: '이름을 묻는다', fn: () => {
+        state.flags.childCount++;
+        log('아이가 입술을 움직인다. 소리가 나오지 않는다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '아이가 당신을 바라본다.',
+          choices: [
+            { text: '가까이 앉는다', fn: () => {
+              state.suspicion++;
+              log('아이의 눈이 조금 비어 있다. 한참 후 고개를 들었을 때 구석은 비어 있었다. 언제 나갔는지 모른다.');
+            }},
+            { text: '그냥 둔다', fn: () => {
+              state.suspicion++;
+              log('다시 봤을 때 자리가 비어 있었다. 바닥에 발자국이 없다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '담요를 덮어준다 (석탄 −1)', fn: () => {
+        state.flags.childCount++;
+        state.coal = Math.max(0, state.coal-1);
+        log('아이가 담요를 두 손으로 꽉 쥔다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '아이가 담요 속에서 당신을 올려다본다.',
+          choices: [
+            { text: '"뭔가 필요한 거 있어?"라고 묻는다', fn: () => {
+              state.trust++;
+              state.flags.childWarm = true;
+              log('아이가 고개를 젓는다. 아침이 되자 담요가 바닥에 반듯하게 개어져 있었다. 아이는 없었다.');
+            }},
+            { text: '옆에 앉아 있는다', fn: () => {
+              state.trust++;
+              state.flags.childWarm = true;
+              log('아이가 조금 움직여 당신 쪽으로 기댔다. 체온이 느껴지지 않았다. 얼마나 시간이 지났을까, 아이는 없었다. 담요만 남았다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '무시하고 업무를 본다', fn: () => {
+        state.flags.childCount++;
+        state.suspicion += 2;
+        log('서류에 집중했다. 다시 봤을 때 구석이 비어 있었다. 나가는 소리를 듣지 못했다. 바닥에 발자국이 없다.');
+      }},
+    ]
+  },
+  {
+    id: 'child_2', tag: '밤 손님',
+    desc: '자정. 아이가 이번엔 창구 앞에 서 있다. 지난번보다 조금 가까이.',
+    choices: [
+      { text: '"또 왔구나"라고 한다', fn: () => {
+        state.flags.childCount++;
+        log('아이가 고개를 끄덕인다. 아무 말이 없다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '아이가 기다린다.',
+          choices: [
+            { text: '손을 내밀어 본다', fn: () => {
+              state.trust++;
+              log('아이가 손을 잡는다. 차갑다. 얼음처럼. 한참 있다가 손을 놓고 구석으로 걸어갔다. 새벽에 사라졌다.');
+            }},
+            { text: '안으로 들인다', fn: () => {
+              state.trust++;
+              state.flags.childWarm = true;
+              state.coal--;
+              log('아이가 난로 앞에 앉아 불을 바라봤다. 불빛이 아이 눈에 비쳤다. 얼마나 지났을까, 아이는 없었다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '간식을 내민다 (석탄 −1)', fn: () => {
+        state.flags.childCount++;
+        state.coal = Math.max(0, state.coal-1);
+        if(state.flags.childWarm){
+          state.trust++;
+          log('아이가 받아 들었다. 먹지는 않는다. 그냥 손에 쥐고 있었다. 새벽에 사라질 때 가져갔다.');
+        } else {
+          state.suspicion++;
+          log('아이가 받지 않는다. 그냥 바라본다. "배고프지 않아요." 처음 들은 목소리였다.');
+        }
+      }},
+      { text: '어디서 왔는지 묻는다', fn: () => {
+        state.flags.childCount++;
+        log('아이가 잠깐 생각한다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '아이의 시선이 움직인다.',
+          choices: [
+            { text: '시선을 따라간다', fn: () => {
+              state.suspicion++;
+              state.flags.trainFlag = Math.min(state.flags.trainFlag+1, 3);
+              log('아이가 플랫폼 쪽을 가리켰다. 선로 방향이었다. 더 묻기 전에 고개를 돌렸다.');
+            }},
+            { text: '대답을 기다린다', fn: () => {
+              state.suspicion++;
+              log('아이가 고개를 젓는다. "몰라요." 그게 전부였다.');
+            }},
+          ]
+        }), 300);
+      }},
+    ]
+  },
+  {
+    id: 'child_3', tag: '밤 손님',
+    desc: '어느 순간 아이가 난로 옆에 앉아 있다. 언제 들어왔는지 모른다. 이번엔 당신 쪽을 보고 있다.',
+    choices: [
+      { text: '옆에 앉는다', fn: () => {
+        state.flags.childCount++;
+        state.trust++;
+        log('둘 다 아무 말이 없었다. 난로 소리만 들렸다. 한참 후 아이가 말했다. "아직 안 왔어요." 뭐가냐고 묻기 전에 사라졌다.');
+      }},
+      { text: '"뭘 기다리고 있어?"라고 묻는다', fn: () => {
+        state.flags.childCount++;
+        state.suspicion++;
+        state.flags.trainFlag = Math.min(state.flags.trainFlag+1, 3);
+        log('아이가 당신을 봤다. "알잖아요." 그게 전부였다. 눈을 깜빡이는 사이에 사라졌다.');
+      }},
+      { text: '담요를 다시 덮어준다 (석탄 −1)', fn: () => {
+        state.flags.childCount++;
+        state.trust++;
+        state.coal = Math.max(0, state.coal-1);
+        log('아이가 눈을 감았다. 잠든 것 같았다. 아침이 되자 담요만 남아 있었다. 이번엔 담요가 아이 모양으로 눌려 있었다.');
+      }},
+    ]
+  },
+  {
+    id: 'couple', tag: '밤 손님',
+    desc: '3시. 젊은 남녀가 들어온다. 표를 사겠다고 한다. 이 역은 1년 전 폐선됐다.',
+    choices: [
+      { text: '"열차는 없습니다"라고 말한다', fn: () => {
+        state.flags.coupleCount++;
+        log('남자가 웃는다. "그럼 왜 불이 켜져 있죠?" 그리고 덧붙인다. "그래도 표는 있나요?"');
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '남자가 기다린다. 여자는 당신을 바라보고 있다.',
+          choices: [
+            { text: '빈 표를 끊어준다', fn: () => {
+              state.trust++;
+              state.flags.coupleWarm = true;
+              state.coal--;
+              log('여자가 표를 가슴에 품는다. 둘은 플랫폼 쪽으로 나갔다. 따라가 보니 발자국이 없었다.');
+            }},
+            { text: '"표도 없습니다"라고 한다', fn: () => {
+              state.suspicion++;
+              log('남자가 고개를 끄덕인다. "그렇군요." 둘은 말없이 나갔다. 창밖에 아무도 없었다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '빈 표를 끊어준다 (석탄 −1)', fn: () => {
+        state.flags.coupleCount++;
+        // 인벤토리에 표가 있으면 소비, 없으면 석탄 소비
+        const ticket = state.inventory.find(i => i.id === 'platform_ticket');
+        const blankTickets = hasItem('blank_tickets');
+        if(ticket){
+          ticket.count = (ticket.count || 1) - 1;
+          if(ticket.count <= 0) removeItem('platform_ticket');
+          else { ticket.label = '승차권 ' + ticket.count + '장'; updateInventory(); }
+          log('주워뒀던 표를 내밀었다. 남자가 고맙다고 한다. 여자가 표를 받으려 손을 내밀었다.');
+        } else if(blankTickets){
+          log('서랍에서 빈 승차권을 꺼내 끊어줬다. 남자가 고맙다고 한다. 여자가 표를 받으려 손을 내밀었다.');
+        } else {
+          state.coal = Math.max(0, state.coal-1);
+          log('빈 표를 끊어 내밀었다. 남자가 고맙다고 한다. 여자가 표를 받으려 손을 내밀었다.');
+        }
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '여자가 표를 손에 들고 있다.',
+          choices: [
+            { text: '어디 가는지 묻는다', fn: () => {
+              state.trust++;
+              state.flags.coupleWarm = true;
+              log('남자가 웃는다. "아직 못 정했어요." 여자가 표를 가슴에 품었다. 플랫폼에 발자국이 없었다.');
+            }},
+            { text: '그냥 배웅한다', fn: () => {
+              state.trust++;
+              state.flags.coupleWarm = true;
+              log('여자가 표를 가슴에 품었다. 둘이 문을 열고 나갔다. 플랫폼에 아무도 없었다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '역에서 내보낸다', fn: () => {
+        state.flags.coupleCount++;
+        state.suspicion += 2;
+        log('두 사람이 말없이 나갔다. 창문으로 내다봤지만 역 앞에 아무도 없었다. 처음부터 없었던 것처럼.');
+      }},
+    ]
+  },
+  {
+    id: 'couple_2', tag: '밤 손님',
+    desc: '또 왔다. 이번엔 뭔가 다르다. 둘 사이에 어딘가 어긋난 것 같다.',
+    choices: [
+      { text: '남자의 말을 듣는다 ("전에도 여기 계셨죠?")', fn: () => {
+        state.flags.coupleCount++;
+        log('남자가 당신을 보며 말한다. "전에도 여기 계셨죠?"');
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '처음 보는 얼굴인데. 여자가 당신을 바라보고 있다.',
+          choices: [
+            { text: '"처음 뵙는데요"라고 한다', fn: () => {
+              state.suspicion++;
+              log('남자가 웃는다. "그렇군요." 더 이상 말하지 않았다. 여자는 아무 말도 하지 않았다.');
+            }},
+            { text: '"기억이 잘..."이라고 한다', fn: () => {
+              state.trust++;
+              log('여자가 처음으로 입을 열었다. "괜찮아요." 무엇이 괜찮은 건지 몰랐다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '표를 끊어준다', fn: () => {
+        state.flags.coupleCount++;
+        if(state.flags.coupleWarm){
+          state.trust++;
+          state.flags.trainFlag = Math.min(state.flags.trainFlag+1, 3);
+          log('여자가 가방에서 지난번 표를 꺼냈다. "이것도 있는데요." 남자가 웃으며 말했다. "그래도요." 여자가 두 장을 가슴에 품었다.');
+        } else {
+          state.trust++;
+          log('남자가 표를 받아 여자에게 건넸다. 여자가 가슴에 품었다. 둘은 말없이 나갔다.');
+        }
+      }},
+    ]
+  },
+  {
+    id: 'couple_3', tag: '밤 손님',
+    desc: '이번엔 여자 혼자다. 평소보다 조용하다. 창구 앞에 서서 당신을 바라본다.',
+    choices: [
+      { text: '"남자분은요?"라고 묻는다', fn: () => {
+        state.flags.coupleCount++;
+        state.flags.trainFlag = Math.min(state.flags.trainFlag+1, 3);
+        log('여자가 잠깐 멈추더니 말했다. "먼저 갔어요."');
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '여자가 당신을 본다.',
+          choices: [
+            { text: '"어디로요?"라고 묻는다', fn: () => {
+              state.suspicion++;
+              log('여자가 플랫폼 쪽을 봤다. "저도 몰라요." 그리고 돌아섰다. 플랫폼에 발자국이 없었다.');
+            }},
+            { text: '더 묻지 않는다', fn: () => {
+              state.trust++;
+              log('여자가 고개를 끄덕였다. 한참 서 있다가 나갔다. 뒤를 돌아보지 않았다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '표를 끊어준다 (석탄 −1)', fn: () => {
+        state.flags.coupleCount++;
+        state.trust++;
+        const ticket = state.inventory.find(i => i.id === 'platform_ticket');
+        if(ticket){
+          ticket.count = (ticket.count || 1) - 1;
+          if(ticket.count <= 0) removeItem('platform_ticket');
+          else { ticket.label = '승차권 ' + ticket.count + '장'; updateInventory(); }
+          log('주워뒀던 표를 내밀었다. 여자가 표를 받았다. 가방에서 지난 표들을 꺼내 새 표와 함께 가슴에 품었다. 세 장이었다. 언제 세 장이 됐는지 모른다.');
+        } else {
+          state.coal = Math.max(0, state.coal-1);
+          log('여자가 표를 받았다. 가방에서 지난 표들을 꺼내 새 표와 함께 가슴에 품었다. 세 장이었다. 언제 세 장이 됐는지 모른다.');
+        }
+      }},
+      { text: '그냥 바라본다', fn: () => {
+        state.flags.coupleCount++;
+        state.trust += 2;
+        state.flags.coupleWarm = true;
+        log('여자가 먼저 말했다. "기다려줘서 고마워요." 누구를 기다렸는지 몰랐다. 여자는 표를 받지 않고 나갔다.');
+      }},
+    ]
+  },
+  {
+    id: 'cold_night', tag: '혹한',
+    desc: '기온이 급격히 떨어진다. 역사 창문에 성에가 낀다. 석탄을 두 배 써야 난로를 유지할 수 있다.',
+    choices: [
+      { text: '석탄을 더 넣는다 (−3장)', fn: () => {
+        if(state.coal < 3){ log('석탄이 부족하다. 역사가 얼어붙기 시작한다.'); triggerGameOver('동파'); }
+        else { state.coal -= 3; state.warmth = 5; log('겨우 온기를 유지했다. 창밖으로 눈이 내린다. 역사 안은 나 혼자다.'); }
+      }},
+      { text: '신문지로 창문을 막는다', fn: () => { log('온도가 조금 올라간다. 임시방편이지만 오늘 밤은 버텼다. 역사 안은 나 혼자다.'); state.warmth = Math.min(state.warmth+2, 5); } },
+      { text: '그냥 버틴다', fn: () => {
+        state.warmth = Math.max(state.warmth-2, 0);
+        if(state.warmth === 0){ log('체온이 더 이상 올라오지 않는다.'); triggerGameOver('동사'); }
+        else { log('손끝이 감각을 잃는다. 그래도 새벽까지 버텼다. 역사 안은 나 혼자다.'); }
+      }},
+    ]
+  },
+  {
+    id: 'woman_photo', tag: '밤 손님',
+    desc: '새벽 1시. 중년 여자가 들어온다. 숨을 참는 것처럼 보인다. 사진 한 장을 내민다. "이 사람 본 적 있나요." 사진 속 얼굴이 당신을 닮았다.',
+    choices: [
+      { text: '"모르는 분입니다"라고 한다', fn: () => {
+        state.flags.photoCount++;
+        log('여자가 사진을 접어 넣는다. "그렇겠죠." 돌아서다 멈췄다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '여자가 문 앞에서 멈춰 있다. 뭔가 더 있을 것 같다.',
+          choices: [
+            { text: '불러 세운다', fn: () => {
+              state.trust++;
+              log('여자가 돌아봤다. 눈이 붉었다. 아무 말도 하지 않고 다시 나갔다. 문이 닫히는 소리가 오래 남았다.');
+            }},
+            { text: '그냥 보낸다', fn: () => {
+              state.suspicion++;
+              log('여자가 나갔다. 밖을 확인했지만 아무도 없었다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '사진을 자세히 본다', fn: () => {
+        state.flags.photoCount++;
+        log('사진 뒷면에 날짜가 적혀 있다. 오늘 날짜다. 고개를 드니 여자가 울고 있었다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '여자가 울음을 참으려 하고 있다.',
+          choices: [
+            { text: '왜 우냐고 묻는다', fn: () => {
+              state.suspicion++;
+              log('여자가 고개를 저었다. "괜찮아요." 사진을 받아 들고 나갔다. 신발에 눈이 쌓여 있었다.');
+            }},
+            { text: '사진을 돌려준다', fn: () => {
+              state.trust++;
+              log('여자가 사진을 받아 가슴에 품었다. 한참 서 있다가 나갔다. 돌아보지 않았다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '"잠깐 앉으세요"라고 한다', fn: () => {
+        state.flags.photoCount++;
+        log('여자가 잠깐 망설이다 들어왔다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '여자가 자리에 앉았다. 사진을 손에 쥐고 있다.',
+          choices: [
+            { text: '차를 내린다 (석탄 −1)', fn: () => {
+              state.trust++;
+              state.flags.photoWarm = true;
+              state.coal = Math.max(0, state.coal-1);
+              log('여자가 찻잔을 두 손으로 감쌌다. 손이 떨렸다. 얼마나 지났을까, 감사하다고 인사하고 나갔다. 신발에 눈이 쌓여 있었다.');
+            }},
+            { text: '사진 속 사람을 아냐고 묻는다', fn: () => {
+              state.suspicion++;
+              log('여자가 잠깐 멈췄다. "닮은 것 같아서요." 더 이상 말하지 않았다.');
+            }},
+          ]
+        }), 300);
+      }},
+    ]
+  },
+  {
+    id: 'woman_photo_2', tag: '밤 손님',
+    desc: '또 왔다. 이번엔 사진을 바로 꺼내지 않는다. 당신을 먼저 바라본다.',
+    choices: [
+      { text: '"지난번에도 오셨죠?"라고 한다', fn: () => {
+        state.flags.photoCount++;
+        state.trust++;
+        log('여자가 고개를 끄덕인다. "기억하는군요." 그 말이 이상하게 무거웠다. 사진을 꺼내 다시 내밀었다.');
+      }},
+      { text: '이번엔 사진을 받지 않는다', fn: () => {
+        state.flags.photoCount++;
+        state.suspicion++;
+        log('여자가 사진을 도로 넣었다. 잠깐 당신을 봤다. 뭔가 말하려다 그만뒀다. 조용히 나갔다.');
+      }},
+      { text: '먼저 차를 낸다 (석탄 −1)', fn: () => {
+        state.flags.photoCount++;
+        if(!state.flags.photoWarm){
+          log('여자가 잠깐 놀란 것 같았다. 받으며 고맙다고 했다.');
+          state.trust++;
+        } else {
+          state.trust++;
+          state.flags.trainFlag = Math.min(state.flags.trainFlag+1, 3);
+          log('여자가 받으며 말했다. "추운 데 고마워요." 손이 아까보다 덜 떨렸다. 찻잔을 내려놓으며 창밖을 한번 봤다. 플랫폼 쪽이었다.');
+        }
+        state.coal = Math.max(0, state.coal-1);
+      }},
+    ]
+  },
+  {
+    id: 'woman_photo_3', tag: '밤 손님',
+    desc: '이번엔 사진을 꺼내지 않았다. 그냥 문을 열고 들어와 맞은편에 앉았다. 당신을 보고 있다.',
+    choices: [
+      { text: '"혹시 저 아세요?"라고 묻는다', fn: () => {
+        state.flags.photoCount++;
+        log('여자가 대답하지 않았다. 오래 당신을 봤다. 그리고 말했다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 손님',
+          desc: '"...알아요."',
+          choices: [
+            { text: '"어떻게요?"라고 묻는다', fn: () => {
+              state.trust += 2;
+              state.flags.photoWarm = true;
+              state.flags.motherRecognized = true;
+              log('여자가 대답하지 않았다. 대신 당신의 이름을 불렀다. 게임 내내 처음 들어보는 이름이었다. 당신은 대답하지 못했다. 여자가 일어나 나갔다. 문이 닫혔다.');
+              // 다음 액션 후 작별 엔딩 발동 — 한 번 더 생각할 시간
+              scheduleEvent(24 * 60, () => {
+                state.flags.motherFarewell = true;
+                log('어젯밤 그 이름이 머릿속에서 떠나지 않는다. 뭔가 알 것 같은 기분이 든다.');
+                updateStats();
+              });
+            }},
+            { text: '아무 말도 못 한다', fn: () => {
+              state.trust++;
+              log('여자가 일어났다. 나가면서 한 번 돌아봤다. 눈물이 있었지만 웃고 있었다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '그냥 바라본다', fn: () => {
+        state.flags.photoCount++;
+        state.trust++;
+        log('여자가 오래 앉아 있었다. 아무 말이 없었다. 나갈 때 한 마디만 했다. "잘 있어요." 문이 닫혔다. 신발에 눈이 쌓여 있었다.');
+      }},
+      { text: '차를 내린다 (석탄 −1)', fn: () => {
+        state.flags.photoCount++;
+        state.trust += 2;
+        state.coal = Math.max(0, state.coal-1);
+        log('여자가 찻잔을 받았다. 울었다. 말하지 않았다. 새벽까지 있다가 나갔다. 찻잔이 깨끗이 씻겨 있었다.');
+      }},
+    ]
+  },
+  {
+    id: 'stray_dog', tag: '밤 소리',
+    desc: '밤 12시. 플랫폼 쪽에서 개 울음소리가 들린다. 세 번 울었다. 문을 열면 아무것도 없다.',
+    choices: [
+      { text: '밖으로 나가 확인한다 (온기 −1)', fn: () => {
+        state.flags.dogCount++;
+        state.warmth = Math.max(state.warmth-1, 0);
+        log('플랫폼에 나갔다. 아무것도 없다. 눈만 쌓여 있다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 소리',
+          desc: '조용하다. 선로 쪽에서 소리가 난 것 같다.',
+          choices: [
+            { text: '플랫폼 끝까지 가본다 (온기 −1)', fn: () => {
+              state.warmth = Math.max(state.warmth-1, 0);
+              state.flags.trainFlag = Math.min(state.flags.trainFlag+1, 3);
+              log('선로 쪽에서 울음이 멈췄다. 발자국이 없었다. 눈 위에 작은 자국 하나만 있었다.');
+            }},
+            { text: '그냥 돌아온다', fn: () => {
+              log('아무것도 없었다. 눈만 쌓여 있었다. 역사 안으로 돌아왔다. 혼자다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '문을 잠그고 무시한다', fn: () => {
+        state.flags.dogCount++;
+        log('소리가 뚝 끊겼다. 그런데 잠시 후 네 번째 울음이 들렸다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 소리',
+          desc: '네 번째 울음. 이번엔 조금 더 가까이서.',
+          choices: [
+            { text: '나가본다 (온기 −1)', fn: () => {
+              state.warmth = Math.max(state.warmth-1, 0);
+              log('플랫폼에 나갔지만 아무것도 없었다. 울음도 멈춰 있었다.');
+            }},
+            { text: '계속 무시한다', fn: () => {
+              state.suspicion++;
+              log('한참 후 소리가 멈췄다. 이상하게 신경이 쓰인다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '밥그릇을 문 앞에 놓는다', fn: () => {
+        state.flags.dogCount++;
+        state.trust++;
+        state.flags.dogWarm = true;
+        log('아침에 밥그릇이 비어 있었다. 발자국은 없었다. 누가 먹었는지 모른다.');
+      }},
+    ]
+  },
+  {
+    id: 'stray_dog_2', tag: '밤 소리',
+    desc: '또 들린다. 이번엔 더 가까이서. 역사 바로 밖이다.',
+    choices: [
+      { text: '문을 조금 열어본다', fn: () => {
+        state.flags.dogCount++;
+        log('어둠 속에 눈 두 개가 빛났다. 크기를 알 수 없다. 움직이지 않는다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 소리',
+          desc: '눈이 당신을 보고 있다.',
+          choices: [
+            { text: '그냥 문을 닫는다', fn: () => {
+              state.suspicion++;
+              log('문을 닫았다. 울음이 한 번 더 들리고 멈췄다.');
+            }},
+            { text: '손을 내밀어본다 (온기 −1)', fn: () => {
+              state.warmth = Math.max(state.warmth-1, 0);
+              state.trust++;
+              state.flags.dogWarm = true;
+              log('차가운 코끝이 손에 닿았다. 잠깐이었다. 어둠 속으로 사라졌다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: state.flags && state.flags.dogWarm ? '휘파람을 분다' : '"이리 와"라고 불러본다', fn: () => {
+        state.flags.dogCount++;
+        if(state.flags.dogWarm){
+          state.trust++;
+          state.flags.trainFlag = Math.min(state.flags.trainFlag+1, 3);
+          log('울음이 멈췄다. 잠시 후 발소리가 멀어졌다. 선로 쪽으로.');
+        } else {
+          state.trust++;
+          log('울음이 잠깐 멈췄다. 그리고 다시 한 번 울었다. 조금 다른 소리였다.');
+        }
+      }},
+      { text: '무시한다', fn: () => {
+        state.flags.dogCount++;
+        state.suspicion++;
+        log('새벽까지 울다 멈췄다. 아침에 문 앞에 발자국이 있었다. 개 발자국이 아니었다.');
+      }},
+    ]
+  },
+  {
+    id: 'stray_dog_3', tag: '밤 소리',
+    desc: '이번엔 플랫폼이 아니라 선로 쪽에서 들린다. 한 번만 울었다.',
+    choices: [
+      { text: '플랫폼에 나가본다 (온기 −1)', fn: () => {
+        state.flags.dogCount++;
+        state.warmth = Math.max(state.warmth-1, 0);
+        log('선로 위에 작은 것이 앉아 있다. 눈이 빛난다. 움직이지 않는다.');
+        setTimeout(() => showSubEvent({
+          tag: '밤 소리',
+          desc: '선로 위의 눈이 당신을 보고 있다.',
+          choices: [
+            { text: '가까이 간다 (온기 −1)', fn: () => {
+              state.warmth = Math.max(state.warmth-1, 0);
+              state.flags.trainFlag = Math.min(state.flags.trainFlag+1, 3);
+              log('가까이 갈수록 형체가 흐려졌다. 손이 닿기 직전에 사라졌다. 선로가 차가웠다. 그 이후로 소리가 들리지 않는다.');
+            }},
+            { text: '그냥 돌아온다', fn: () => {
+              state.trust++;
+              log('돌아서서 역사로 들어왔다. 문을 닫을 때 뒤를 봤지만 아무것도 없었다. 그 이후로 소리가 들리지 않는다.');
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '창문으로 내다본다', fn: () => {
+        state.flags.dogCount++;
+        state.flags.trainFlag = Math.min(state.flags.trainFlag+1, 3);
+        log('선로 위에 뭔가 있는 것 같다. 확실하지 않다. 다음날 아침 밥그릇이 또 비어 있었다. 발자국은 없었다.');
+      }},
+      { text: '그냥 둔다', fn: () => {
+        state.flags.dogCount++;
+        state.trust++;
+        log('한 번 더 울고 멈췄다. 그 이후로 소리가 들리지 않는다. 역사가 조용하다.');
+      }},
+    ]
+  },
+  {
+    id: 'letter', tag: '우편',
+    desc: '우체통에 편지가 들어 있다. 수신인이 당신 이름이다. 이 역에 아무도 당신 이름을 알지 못한다.',
+    choices: [
+      { text: '읽는다', fn: () => {
+        // 랜덤으로 어머니 편지 또는 전임 역무원 편지
+        if(Math.random() < 0.5){
+          log('"거기 있나요. 잘 지내고 있는지 모르겠어요. 여기는 아직 겨울이에요." 발신인 란이 비어 있다. 필체가 조심스럽다. 익숙한 것 같기도 하다.');
+          state.trust++;
+          addItem('letter_mom', '편지 — 조심스러운 필체');
+        } else {
+          log('"오래 버티지 못했어요. 당신은 버티길." 그게 전부다. 수첩과 같은 필체다.');
+          state.trust++;
+          state.suspicion++;
+          addItem('letter_prev', '편지 — 전임 역무원');
+        }
+      }},
+      { text: '태운다', fn: () => {
+        log('종이가 타며 이상한 냄새가 난다. 연기가 천장 쪽으로 올라갔다. 석탄 1장 값은 됐다.');
+        state.coal++;
+        state.suspicion++;
+      }},
+      { text: '그대로 둔다', fn: () => {
+        log('다음날 편지가 없어졌다. 건드린 사람은 나뿐이다.');
+      }},
+    ]
+  },
+  {
+    id: 'letter_stranger', tag: '우편',
+    desc: '우체통에 편지가 또 들어 있다. 이번엔 수신인이 당신 이름이 아니다. 다른 이름이 적혀 있다.',
+    choices: [
+      { text: '읽는다', fn: () => {
+        const contents = [
+          '"보고 싶어요. 거기는 춥지 않나요. 여기는 당신 없이도 계절이 바뀌더라고요."',
+          '"미안해요. 마지막에 손 한 번 못 잡았어요. 용서해줄 수 있나요."',
+          '"잘 도착했나요. 대답이 없어서 잘 모르겠어요. 그래도 계속 쓸게요."',
+        ];
+        log(contents[Math.floor(Math.random()*contents.length)] + ' 발신인이 적혀 있지만 당신은 그 이름을 모른다. 소각로에 가져가면 전달할 수 있을 것 같다.');
+        state.suspicion++;
+        addItem('letter_stranger', '낯선 이의 편지');
+      }},
+      { text: '보관한다', fn: () => {
+        log('서랍에 넣어뒀다. 소각로에 가져가면 전달할 수 있을 것 같은 기분이 든다.');
+        addItem('letter_stranger', '낯선 이의 편지');
+      }},
+    ]
+  },
+];
+
+const DAY_EVENTS = [
+  {
+    id: 'inspector', tag: '낮 — 방문객',
+    desc: '오전. 정장 차림의 남자가 나타난다. 철도청 감사팀이라고 밝힌다. 역 장부를 보여달라 한다. 마을에서 여기까지 오는 버스는 하루에 한 번뿐인데, 그 버스는 오늘 결항됐다.',
+    choices: [
+      { text: '장부를 보여준다', fn: () => {
+        log('남자는 페이지를 넘기다 멈춘다. "이 항목은 뭡니까." 당신도 모른다. 남자는 짧게 메모를 남기고 나갔다.');
+        state.suspicion++;
+        addCollection('inspector_memo', '철도청 직원의 메모');
+        setTimeout(() => showSubEvent({
+          tag: '메모',
+          desc: '메모를 펼쳐봤다. "역무원 재직 확인 — 본인 확인 불가. 계속 유지 권고." 아래에 다른 필체로 한 줄이 더 있다. "아직 여기 있군요."',
+          choices: [
+            { text: '메모를 덮는다', fn: () => {
+              log('뭔가 알 것 같기도 하고 모를 것 같기도 하다. 서랍에 넣어뒀다.');
+            }},
+            { text: '메모를 다시 읽는다', fn: () => {
+              log('"본인 확인 불가"라는 말이 마음에 걸린다. 확인할 수 없는 본인이란 무엇인가.');
+              state.suspicion++;
+            }},
+          ]
+        }), 300);
+      }},
+      { text: '"장부는 없습니다"라고 한다', fn: () => { log('남자가 고개를 끄덕인다. "그렇겠죠." 그냥 돌아선다. 어떻게 왔는지 묻지 않았다.'); state.trust++; } },
+      { text: '어떻게 왔는지 묻는다', fn: () => {
+        log('"걸어왔죠." 남자가 말한다. 산 두 개를 넘어서.');
+        setTimeout(() => showSubEvent({
+          tag: '낮 — 방문객',
+          desc: '남자가 당신을 보며 기다린다.',
+          choices: [
+            { text: '"산을 넘어서요?"라고 묻는다', fn: () => { log('남자가 웃는다. "산이라고 부를 수 있다면요." 더 이상 장부 얘기는 꺼내지 않고 돌아갔다. 창밖으로 내다봤지만 아무도 없었다.'); state.suspicion++; } },
+            { text: '말없이 장부를 내민다', fn: () => { log('남자가 한 페이지에서 멈춘다. "여기, 이 날짜에 당신 서명이 있네요." 서명한 기억이 없다. 남자는 아무 말 없이 장부를 덮고 나갔다.'); state.suspicion += 2; } },
+            { text: '"들어오세요"라고 한다 (−1장)', fn: () => {
+              if(state.coal < 1){ log('석탄이 없어 차를 내릴 수가 없었다. 남자는 그냥 돌아갔다.'); state.suspicion++; }
+              else { state.coal--; log('남자가 차를 받아 마시며 한동안 아무 말이 없었다. 나갈 때 "오래 버티세요"라고 했다. 문이 닫히는 소리가 들렸다.'); state.trust += 2; updateStats(); }
+            }},
+          ]
+        }), 300);
+      }},
+    ]
+  },
+  {
+    id: 'villager_wood', tag: '낮 — 마을 사람',
+    desc: '오전. 마을 노인이 리어카를 끌고 역 앞에 섰다. 장작 한 묶음을 내려놓고 말없이 돌아간다. 무언가를 주문한 적이 없다.',
+    choices: [
+      { text: '고맙다고 인사한다', fn: () => { log('노인이 손을 흔든다. 뒤돌아보지 않았다. 장작을 석탄으로 환산하면 3장 분량이다.'); state.coal += 3; } },
+      { text: '왜 가져왔는지 묻는다', fn: () => { log('노인이 걸음을 멈추지 않고 말한다. "원래 이맘때 가져오는 거야." 작년에도, 재작년에도. 하지만 이 역에 온 건 처음이라고 했다.'); state.coal += 2; state.suspicion++; } },
+    ]
+  },
+  {
+    id: 'roof_collapse', tag: '낮 — 사고',
+    desc: '쿵 소리가 났다. 지붕에 쌓인 눈 덩어리가 창고 입구를 반쯤 막았다. 날씨는 어제보다 따뜻한데 눈이 녹은 게 아니라 쌓인 것처럼 보인다.',
+    choices: [
+      { text: '지금 당장 치운다 (온기 −1)', fn: () => { log('한 시간 넘게 삽질했다. 창고는 뚫렸지만 손이 얼었다. 눈 속에서 오래된 열쇠 하나가 나왔다. 어느 문 열쇠인지 모른다.'); state.warmth = Math.max(state.warmth-1, 0); addItem('old_key', '오래된 열쇠'); } },
+      { text: '나중에 치운다', fn: () => {
+        log('치우지 않았다. 내일 봐야겠다.');
+        scheduleEvent(24 * 60, () => {
+          log('[ 낮 — 사고 ] 밤 사이 눈이 더 쌓였다. 창고 입구가 완전히 막혔다. 한동안 창고를 쓸 수 없을 것 같다.');
+          startGatherCooldown(20);
+          updateStats();
+        });
+      }},
+    ]
+  },
+  {
+    id: 'notebook', tag: '낮 — 발견',
+    desc: '서랍 안에서 전임 역무원의 수첩이 나왔다. 마지막 페이지에 메모가 있다. "밤에 오는 사람들을 내보내지 마시오. 아침까지."',
+    choices: [
+      { text: '수첩을 계속 읽는다', fn: () => {
+        log('그 앞 페이지는 모두 빈칸이다. 날짜만 적혀 있고 내용이 없다. 수첩을 서랍에 다시 넣어뒀다.');
+        state.trust++;
+        state.flags.notebookRead = true;
+        addItem('notebook', '전임 역무원 수첩');
+        scheduleEvent(3 * 24 * 60, () => {
+          log('[ 낮 — 발견 ] 서랍을 다시 열었다. 수첩에 새 글씨가 생겨 있다. 오늘 날짜와 어젯밤 당신이 한 선택들이 적혀 있다. 필체가 당신 것이 아니다.');
+          state.suspicion += 2;
+          updateStats();
+        });
+      }},
+      { text: '수첩을 덮는다', fn: () => { log('괜히 읽었나 싶다. 서랍을 닫았다.'); } },
+    ]
+  },
+  {
+    id: 'supply_train', tag: '낮 — 소식',
+    desc: '라디오에서 소식이 들린다. 폐선 구간 물자 지원 열차가 한 번 더 운행된다고 한다. 역에 신청서를 내면 석탄을 받을 수 있다.',
+    choices: [
+      { text: '신청서를 작성한다', fn: () => {
+        log('신청서를 작성해 우편함에 넣었다. 이틀 후 석탄이 도착할 예정이다.');
+        scheduleEvent(2 * 24 * 60, () => {
+          log('[ 배송 도착 ] 플랫폼에 석탄 5장이 내려져 있다. 열차가 다녀간 흔적은 없다.');
+          state.coal += 5;
+          updateStats();
+        });
+      }},
+      { text: '무시한다', fn: () => { log('라디오를 껐다.'); } },
+    ]
+  },
+  {
+    id: 'frozen_pipe', tag: '낮 — 고장',
+    desc: '수도가 얼었다. 난방 배관 중 하나가 막힐 것 같다. 지금 손보지 않으면 밤에 더 추워질 수 있다.',
+    choices: [
+      { text: '석탄을 써서 배관을 녹인다 (−2장)', fn: () => { log('배관이 터지기 전에 겨우 녹였다. 석탄 2장을 썼다. 밤에 역사가 더 따뜻할 것 같다.'); state.coal = Math.max(0, state.coal-2); state.warmth = Math.min(state.warmth+2, 5); } },
+      { text: '그냥 둔다', fn: () => { log('밤이 되자 역사가 더 빨리 식는다. 난로를 더 때야 할 것 같다.'); state.warmth = Math.max(state.warmth-1, 0); } },
+    ]
+  },
+  {
+    id: 'abandoned_house', tag: '낮 — 소문',
+    desc: '역 근처 빈집에 석탄이 남아 있다는 소문이 있다. 누가 알려줬는지 기억이 나지 않는다.',
+    choices: [
+      { text: '빈집에 다녀온다 (온기 −1)', fn: () => { log('집 안에 석탄 3장 분량이 있었다. 그런데 난로에 불이 꺼진 지 얼마 안 된 것 같았다. 누가 살고 있었던 것처럼.'); state.coal += 3; state.warmth = Math.max(state.warmth-1, 0); state.suspicion++; } },
+      { text: '그냥 둔다', fn: () => { log('발걸음이 떨어지지 않았다. 이유는 모른다.'); state.trust++; } },
+    ]
+  },
+  {
+    id: 'blank_tickets_found', tag: '낮 — 발견',
+    desc: '창구 아래 서랍을 열었다. 빈 승차권 묶음이 들어 있다. 아직 쓸 수 있을 것 같다.',
+    choices: [
+      { text: '챙겨둔다', fn: () => {
+        addItem('blank_tickets', '빈 승차권 묶음');
+        log('서랍에서 꺼내 역무실 책상 위에 올려뒀다.');
+      }},
+      { text: '그냥 둔다', fn: () => {
+        log('쓸 일이 생기면 그때 꺼내면 된다.');
+      }},
+    ]
+  },
+  {
+    id: 'platform_ticket', tag: '낮 — 발견',
+    desc: '플랫폼 바닥에 승차권 한 장이 떨어져 있다. 오늘 날짜가 찍혀 있다. 출발지는 이 역, 목적지란이 비어 있다.',
+    choices: [
+      { text: '표를 주워 들고 온다', fn: () => { log('역무실 서랍에 넣어뒀다. 이 역에서 출발하는 열차는 없다.'); addCollection('platform_ticket_col', '날짜 없는 승차권'); state.suspicion++; } },
+      { text: '그대로 둔다', fn: () => { log('다음날 표가 없어졌다. 바람이 가져갔을 수도 있다.'); state.suspicion++; } },
+      { text: '표를 태운다 (석탄 +1)', fn: () => { log('종이가 타는 냄새가 이상하게 익숙하다.'); state.coal++; state.suspicion++; } },
+    ]
+  },
+  {
+    id: 'strange_visitor_day', tag: '낮 — 방문객',
+    desc: '낮 12시. 여자아이 하나가 창구 앞에 서 있다. 표를 사러 왔다고 한다. 혼자다. 마을까지는 산을 두 개 넘어야 한다.',
+    choices: [
+      { text: '"열차가 없다"고 말한다', fn: () => { log('아이는 고개를 끄덕인다. "알아요." 그래도 표를 달라고 한다. 이유를 묻자 "그냥요"라고 했다. 표를 안 주자 그냥 돌아갔다.'); state.suspicion++; } },
+      { text: '빈 표를 끊어준다 (석탄 −1)', fn: () => { log('아이가 표를 받아 들고 플랫폼 쪽으로 걸어갔다. 한참 후 플랫폼을 확인하니 아무도 없었다. 발자국도 없었다.'); state.coal--; state.trust += 2; } },
+      { text: '어디서 왔는지 묻는다', fn: () => { log('아이가 잠깐 생각하더니 말한다. "여기서요." 더 이상 아무 말도 하지 않았다. 잠시 후 사라졌다.'); state.suspicion++; } },
+    ]
+  },
+];
+
+let usedDayEvents = [];
+let usedEvents = [];
+let gatherCooldown = false;
+let cooldownInterval = null;
+
+function $(id){ return document.getElementById(id); }
+
+function addItem(id, label){
+  if(!state.inventory.find(i => i.id === id)){
+    state.inventory.push({id, label});
+    updateInventory();
+    log('[ 소지품 ] ' + label + ' 을(를) 보관했다.');
+  }
+}
+
+function addCollection(id, label){
+  if(!state.collection.find(i => i.id === id)){
+    state.collection.push({id, label});
+    updateInventory();
+    log('[ 수집품 ] ' + label + ' 을(를) 수집했다.');
+  }
+}
+
+function removeItem(id){
+  state.inventory = state.inventory.filter(i => i.id !== id);
+  updateInventory();
+}
+
+function hasItem(id){
+  return !!state.inventory.find(i => i.id === id);
+}
+
+function hasCollection(id){
+  return !!state.collection.find(i => i.id === id);
+}
+
+// 탭 전환
+document.querySelectorAll('.tab-btn:not(.locked)').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+    btn.classList.add('active');
+    $('tab-' + tab).style.display = 'flex';
+  });
+});
+
+// 인벤토리 토글
+$('inventory-toggle').addEventListener('click', () => {
+  const content = $('inventory-content');
+  const arrow = $('inv-arrow');
+  const isOpen = content.style.display !== 'none';
+  content.style.display = isOpen ? 'none' : 'block';
+  arrow.classList.toggle('open', !isOpen);
+});
+
+function updateInventory(){
+  const list = $('inventory-list');
+  if(state.inventory.length === 0){
+    list.innerHTML = '<span class="inv-empty">없음</span>';
+  } else {
+    list.innerHTML = state.inventory.map(i =>
+      '<span class="inv-tag">' + i.label + '</span>'
+    ).join('');
+  }
+  const clist = $('collection-list');
+  if(state.collection.length === 0){
+    clist.innerHTML = '<span class="inv-empty">없음</span>';
+  } else {
+    clist.innerHTML = state.collection.map(i =>
+      '<span class="col-tag">' + i.label + '</span>'
+    ).join('');
+  }
+  // 토글 버튼에 총 아이템 수 표시
+  const total = state.inventory.length + state.collection.length;
+  $('inv-count').textContent = total > 0 ? '(' + total + ')' : '';
+  // 열쇠 보유 시 안쪽 방 버튼 표시
+  const roomBtn = $('btn-inner-room');
+  if(hasItem('old_key')){
+    roomBtn.style.display = 'block';
+    roomBtn.disabled = false;
+    roomBtn.classList.remove('locked');
+    roomBtn.querySelector('.cost').textContent = state.flags.innerRoomOpened ? '45분' : '열쇠로 열 수 있다';
+  } else {
+    roomBtn.style.display = 'none';
+  }
+}
+
+function formatTime(minutes) {
+  const h = Math.floor(minutes / 60) % 24;
+  const m = minutes % 60;
+  const ampm = h < 12 ? '오전' : (h === 12 ? '낮' : '오후');
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return ampm + ' ' + h12 + ':' + String(m).padStart(2,'0');
+}
+
+let scheduledEvents = [];
+
+function scheduleEvent(afterMinutes, fn) {
+  const triggerAt = state.minutes + (state.day - 1) * 24 * 60 + afterMinutes;
+  scheduledEvents.push({ triggerAt, fn });
+}
+
+function getTotalMinutes() {
+  return (state.day - 1) * 24 * 60 + state.minutes;
+}
+
+function advanceTime(mins) {
+  state.minutes += mins;
+  while(state.minutes >= 24*60) {
+    state.minutes -= 24*60;
+    state.day++;
+    state.warmth = Math.min(state.warmth + 1, 5);
+  }
+  // 예약 이벤트 체크
+  const now = getTotalMinutes();
+  scheduledEvents = scheduledEvents.filter(e => {
+    if(now >= e.triggerAt){ e.fn(); return false; }
+    return true;
+  });
+}
+
+function updateStats(){
+  const c = $('coal-val'); c.textContent = state.coal; c.className = 'stat-val' + (state.coal<=3?' low':'');
+  const t = $('trust-val'); t.textContent = state.trust; t.className = 'stat-val' + (state.trust>=10?' warn':'');
+  const s = $('suspicion-val'); s.textContent = state.suspicion; s.className = 'stat-val' + (state.suspicion>=5?' low':'');
+  // 온기 도트 표시
+  const dots = ['○○○○○','●○○○○','●●○○○','●●●○○','●●●●○','●●●●●'];
+  const wt = $('warmth-text-val');
+  wt.textContent = dots[Math.max(0,Math.min(5,state.warmth))];
+  wt.className = 'stat-val' + (state.warmth<=1?' low': state.warmth<=2?' warn':'');
+  // 공덕 구간 해금 체크
+  if(state.trust >= 8 && !state.unlocked.platform){
+    state.unlocked.platform = true;
+    const tabBtn = document.querySelector('[data-tab="platform"]');
+    tabBtn.classList.remove('locked');
+    tabBtn.classList.add('unlocked-new');
+    tabBtn.addEventListener('click', function handler(){
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+      tabBtn.classList.add('active');
+      $('tab-platform').style.display = 'flex';
+    });
+    log('[ 해금 ] 플랫폼으로 나갈 수 있게 됐다.');
+    setTimeout(() => tabBtn.classList.remove('unlocked-new'), 4000);
+  }
+  if(state.trust >= 16 && !state.unlocked.outside){
+    state.unlocked.outside = true;
+    const tabBtn = document.querySelector('[data-tab="outside"]');
+    tabBtn.classList.remove('locked');
+    tabBtn.classList.add('unlocked-new');
+    tabBtn.addEventListener('click', function handler(){
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+      tabBtn.classList.add('active');
+      $('tab-outside').style.display = 'flex';
+    });
+    log('[ 해금 ] 역 밖으로 나갈 수 있게 됐다.');
+    setTimeout(() => tabBtn.classList.remove('unlocked-new'), 4000);
+  }
+  // 시간대에 따라 기다리기 버튼 텍스트 변경
+  const hNow = Math.floor(state.minutes/60) % 24;
+  const isNightNow = hNow >= 21 || hNow < 7;
+  const waitBtn = $('btn-wait');
+  waitBtn.innerHTML = (isNightNow ? '아침을 기다리다' : '밤을 기다리다') + '<span class="cost">1시간 경과</span>';
+
+  // 시간 표시
+  $('time-clock-val').textContent = formatTime(state.minutes);
+  $('time-day-val').textContent = state.day + '일째';
+}
+
+function log(text){
+  const logEl = $('log');
+  const lines = logEl.querySelectorAll('.log-line');
+  lines.forEach(l => {
+    if(l.classList.contains('current')) l.className='log-line old';
+    else if(l.classList.contains('old')) l.className='log-line faint';
+  });
+  const el = document.createElement('div');
+  el.className = 'log-line current';
+  el.textContent = text;
+  logEl.appendChild(el);
+  const area = $('log-area');
+  area.scrollTop = area.scrollHeight;
+}
+
+let actionCount = 0;
+
+function advanceDay(mins){
+  advanceTime(mins || 60);
+  updateStats();
+  if(state.coal <= 0){ triggerGameOver('석탄 소진'); return; }
+  if(state.suspicion >= 15){ triggerGameOver('추방'); return; }
+
+  const hCheck = Math.floor(state.minutes/60) % 24;
+  const isNightCheck = hCheck >= 22 || hCheck < 4;
+  const lettersBurned = state.flags.lettersBurned || 0;
+  const canReincarnate = state.trust >= 20 && state.suspicion <= 5;
+
+  // ① 작별 엔딩
+  if(state.flags.motherFarewell && state.trust >= 25){
+    triggerEnding('작별'); return;
+  }
+  // ② 열차 엔딩
+  if(state.flags.trainFlag >= 3 && state.trust >= 20 && isNightCheck){
+    triggerTrainEnding(); return;
+  }
+  // ③ 역할을 다했다
+  if(lettersBurned >= 3 && state.flags.childCount >= 3 && state.trust >= 30){
+    triggerEnding('봄'); return;
+  }
+  // ④ 40일 생존 — 환생 가능 여부에 따라 분기
+  if(state.day >= 40){ triggerEnding(canReincarnate ? '환생선택' : '역무원'); return; }
+
+  actionCount++;
+  const h = Math.floor(state.minutes/60) % 24;
+  const isNight = h >= 21 || h < 7;
+
+  if(actionCount % 5 === 0){
+    if(isNight){
+      const omc = state.flags.oldManCount;
+      const cc = state.flags.childCount;
+      const cpc = state.flags.coupleCount;
+      const pc = state.flags.photoCount;
+      const dc = state.flags.dogCount;
+
+      let nightPool = EVENTS.filter(e => {
+        if(e.id === 'old_man' && omc > 0) return false;
+        if(e.id === 'old_man_2' && (omc !== 1 || state.trust < 8)) return false;
+        if(e.id === 'old_man_3' && (omc !== 2 || state.trust < 12)) return false;
+        if(e.id === 'child' && cc > 0) return false;
+        if(e.id === 'child_2' && (cc !== 1 || state.trust < 6)) return false;
+        if(e.id === 'child_3' && (cc !== 2 || state.trust < 10)) return false;
+        if(e.id === 'couple' && cpc > 0) return false;
+        if(e.id === 'couple_2' && cpc !== 1) return false;
+        if(e.id === 'couple_3' && (cpc !== 2 || state.trust < 10)) return false;
+        if(e.id === 'woman_photo' && pc > 0) return false;
+        if(e.id === 'woman_photo_2' && pc !== 1) return false;
+        if(e.id === 'woman_photo_3' && (pc !== 2 || state.trust < 15)) return false;
+        if(e.id === 'stray_dog' && dc > 0) return false;
+        if(e.id === 'stray_dog_2' && (dc !== 1 || state.flags.trainFlag < 1)) return false;
+        if(e.id === 'stray_dog_3' && (dc !== 2 || state.flags.trainFlag < 2)) return false;
+        // letter_stranger는 letter 이후 반복 등장 가능 — usedEvents 체크 제외
+        if(e.id === 'letter_stranger'){
+          return usedEvents.includes('letter'); // letter 본 이후면 항상 등장 가능
+        }
+        return !usedEvents.includes(e.id);
+      });
+      if(nightPool.length > 0){
+        const evt = nightPool[Math.floor(Math.random()*nightPool.length)];
+        usedEvents.push(evt.id);
+        setTimeout(()=>showEvent(evt), 300);
+      } else {
+        usedEvents = usedEvents.filter(id =>
+          ['old_man','old_man_2','old_man_3','child','child_2','child_3','couple','couple_2','couple_3','woman_photo','woman_photo_2','woman_photo_3','stray_dog','stray_dog_2','stray_dog_3'].includes(id)
+        );
+        const quietMsgs = ['조용한 밤이다. 역사 밖으로 바람 소리만 들린다.','먼 산에서 짐승 울음이 들렸다. 곧 잠잠해졌다.','플랫폼에 눈이 내린다.','라디오를 켰지만 잡음만 들린다. 꺼버렸다.'];
+        log(quietMsgs[Math.floor(Math.random()*quietMsgs.length)]);
+      }
+    } else {
+      const available = DAY_EVENTS.filter(e=>!usedDayEvents.includes(e.id));
+      if(available.length > 0){
+        const evt = available[Math.floor(Math.random()*available.length)];
+        usedDayEvents.push(evt.id);
+        setTimeout(()=>showEvent(evt), 300);
+      } else {
+        usedDayEvents = usedDayEvents.slice(-2);
+        const dayMsgs = ['햇빛이 텅 빈 플랫폼을 비춘다.','바람이 역사 현판을 흔든다.','멀리서 트럭 소리가 들렸다 사라진다.','오늘도 열차는 오지 않는다.'];
+        log(dayMsgs[Math.floor(Math.random()*dayMsgs.length)]);
+      }
+    }
+  }
+}
+function setTabsVisible(v){
+  const activeTab = document.querySelector('.tab-btn.active');
+  const activeId = activeTab ? 'tab-' + activeTab.dataset.tab : 'tab-inside';
+  document.querySelectorAll('.tab-pane').forEach(p => {
+    p.style.display = v ? (p.id === activeId ? 'flex' : 'none') : 'none';
+  });
+}
+
+function showSubEvent(evt){
+  const box = $('event-box');
+  box.style.display = 'block';
+  box.innerHTML = '<span class="event-tag">[ ' + evt.tag + ' ]</span>' + evt.desc;
+  const choicesEl = $('choices');
+  choicesEl.innerHTML = '';
+  evt.choices.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = c.text;
+    btn.onclick = () => {
+      c.fn();
+      updateStats();
+      box.style.display = 'none';
+      choicesEl.innerHTML = '';
+      state.eventPending = false;
+      setTabsVisible(true);
+      if(!$('gameover').style.display || $('gameover').style.display === 'none') advanceDay(30);
+    };
+    choicesEl.appendChild(btn);
+  });
+}
+
+function showEvent(evt){
+  state.eventPending = true;
+  const timeStr = formatTime(state.minutes);
+  const descWithTime = evt.desc.replace(/^(새벽|오전|오후|자정|한낮)[^.]*\.\s*/, timeStr + '. ');
+  log('[ ' + evt.tag + ' ] ' + descWithTime.split('.')[0] + '.');
+  const box = $('event-box');
+  box.style.display = 'block';
+  box.innerHTML = '<span class="event-tag">[ ' + evt.tag + ' ]</span>' + descWithTime;
+  const choicesEl = $('choices');
+  choicesEl.innerHTML = '';
+  evt.choices.forEach(c=>{
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = c.text;
+    btn.onclick = ()=>{
+      c.fn();
+      updateStats();
+      box.style.display = 'none';
+      choicesEl.innerHTML = '';
+      state.eventPending = false;
+      setTabsVisible(true);
+      if(!$('gameover').style.display || $('gameover').style.display==='none') advanceDay(30);
+    };
+    choicesEl.appendChild(btn);
+  });
+  setTabsVisible(false);
+}
+
+function triggerGameOver(reason){
+  $('main').style.display = 'none';
+  const go = $('gameover');
+  go.style.display = 'block';
+  go.className = '';
+  const data = {
+    '석탄 소진': ['역사가 꺼졌다', '석탄이 다 떨어졌다. 마지막 불꽃이 사그라들며 역사는 완전한 어둠 속으로 가라앉았다. ' + state.day + '일을 버텼다.'],
+    '동파': ['파이프가 터졌다', '혹한이 이겼다. 역사 안 파이프가 모두 얼어 터졌다. ' + state.day + '일을 버텼다.'],
+    '동사': ['새벽에 쓰러졌다', '체온이 더 이상 올라오지 않았다. 새벽빛이 스며들 무렵, 역무원 의자에서 조용히 눈을 감았다.'],
+    '추방': ['경계에 홀로 남겨졌다', '역이 당신을 더 이상 필요로 하지 않는다. 당신은 저편으로 떠나야만 한다. 돌아올 방법은 없다.'],
+  };
+  const d = data[reason] || ['끝', reason];
+  $('go-title').textContent = d[0];
+  $('go-msg').textContent = d[1];
+}
+
+function showEnding(title, lines, isGood){
+  $('main').style.display = 'none';
+  const go = $('gameover');
+  go.querySelectorAll('div, p.ending-summary').forEach(el=>el.remove());
+  go.style.display = 'block';
+  go.className = isGood ? 'ending' : '';
+  $('go-title').textContent = title;
+  $('go-msg').textContent = '';
+  const p = document.createElement('p');
+  p.style.cssText = 'font-size:13px;color:var(--text-dim);line-height:2;margin-bottom:1.25rem;white-space:pre-line;';
+  p.textContent = lines.join('\n\n');
+  go.insertBefore(p, go.querySelector('.restart-btn'));
+  // 플레이 요약
+  const metEncounters = [
+    state.flags.oldManCount > 0 && '노인',
+    state.flags.childCount > 0 && '아이',
+    state.flags.coupleCount > 0 && '커플',
+    state.flags.photoCount > 0 && '중년 여자',
+    state.flags.dogCount > 0 && '개',
+  ].filter(Boolean);
+  const summary = document.createElement('p');
+  summary.className = 'ending-summary';
+  summary.style.cssText = 'font-size:11px;color:var(--text-faint);line-height:1.9;margin-bottom:1.5rem;border-top:0.5px solid var(--border);padding-top:0.75rem;';
+  summary.textContent = [
+    state.day + '일 생존',
+    '만난 손님: ' + (metEncounters.length > 0 ? metEncounters.join(', ') : '없음'),
+    '태운 편지: ' + (state.flags.lettersBurned || 0) + '통',
+    '공덕 ' + state.trust + ' · 업 ' + state.suspicion,
+  ].join('  ·  ');
+  go.insertBefore(summary, go.querySelector('.restart-btn'));
+}
+
+function triggerEnding(type){
+  if(type === '봄'){
+    showEnding('역할을 다했다', [
+      '아이가 떠난 날 아침, 역사가 조용했다.',
+      '보낼 편지를 다 보냈다. 난로 연기가 굴뚝을 타고 올라갔다.',
+      '봄이 왔다.',
+      '다음 역무원에게 수첩을 남겼다. 빈칸 다음 페이지에 딱 한 줄만 적었다.',
+      '"잘 버텨요."',
+      '공덕 ' + state.trust + ' · ' + state.day + '일.'
+    ], true);
+  } else if(type === '환생선택'){
+    // 환생/열반 선택 화면
+    $('main').style.display = 'none';
+    const go = $('gameover');
+    go.querySelectorAll('div, p.ending-summary').forEach(el=>el.remove());
+    go.style.display = 'block';
+    go.className = 'ending';
+    $('go-title').textContent = '선택의 시간';
+    $('go-msg').textContent = '';
+    const desc = document.createElement('p');
+    desc.style.cssText = 'font-size:13px;color:var(--text-dim);line-height:2;margin-bottom:1.25rem;white-space:pre-line;';
+    desc.textContent = '봄이 가까워지고 있다.\n당신이 이 역에 묶인 이유가 조금씩 희미해진다.\n공덕이 쌓였다. 업이 거의 없다.\n이제 선택할 수 있다.';
+    go.insertBefore(desc, go.querySelector('.restart-btn'));
+    const choicesEl = document.createElement('div');
+    choicesEl.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem;';
+    const btn1 = document.createElement('button');
+    btn1.className = 'restart-btn';
+    btn1.textContent = '환생한다';
+    btn1.onclick = () => {
+      go.className = 'ending';
+      $('go-title').textContent = '다시 태어났다';
+      desc.textContent = '빛이 들어왔다.\n어디선가 아이 울음소리가 들렸다.\n당신은 기억하지 못한다.\n그래도 괜찮다.\n\n공덕 ' + state.trust + ' · ' + state.day + '일.';
+      choicesEl.remove();
+    };
+    const btn2 = document.createElement('button');
+    btn2.className = 'restart-btn';
+    btn2.textContent = '이대로 열반에 든다';
+    btn2.onclick = () => {
+      go.className = 'ending';
+      $('go-title').textContent = '고요해졌다';
+      desc.textContent = '미련을 버렸다.\n환생도, 경계도, 역도 더 이상 필요하지 않다.\n난로 불이 마지막으로 한 번 밝아졌다가 꺼졌다.\n고요했다.\n\n공덕 ' + state.trust + ' · ' + state.day + '일.';
+      choicesEl.remove();
+    };
+    choicesEl.appendChild(btn1);
+    choicesEl.appendChild(btn2);
+    go.insertBefore(choicesEl, go.querySelector('.restart-btn'));
+    return;
+    showEnding('오늘도 열차는 오지 않았다', [
+      '봄이 왔는지 모르겠다. 눈은 녹았다.',
+      '아무것도 해결되지 않았다.',
+      '수첩을 꺼내 날짜를 적었다. ' + state.day + '번째.',
+      '난로에 석탄을 한 장 넣었다.',
+      '그냥 남아 있다.'
+    ], false);
+  } else if(type === '작별'){
+    showEnding('엄마라는 걸 알았다', [
+      '여자가 이름을 불렀을 때, 처음으로 대답했다.',
+      '기억이 전부 돌아온 건 아니었다. 하지만 이 사람이 누군지는 알았다.',
+      '둘이 한동안 아무 말이 없었다.',
+      '여자가 먼저 일어섰다. 붙잡지 않았다.',
+      '"잘 가요." 처음으로 한 말이었다.',
+      '문이 닫혔다.',
+      '다음 날 밤, 열차가 왔다.'
+    ], true);
+  }
+}
+
+function triggerTrainEnding(){
+  $('main').style.display = 'none';
+  const go = $('gameover');
+  go.querySelectorAll('div').forEach(el=>el.remove());
+  go.style.display = 'block';
+  go.className = 'ending';
+  $('go-title').textContent = '열차가 왔다';
+  $('go-msg').textContent = '';
+
+  const desc = document.createElement('p');
+  desc.style.cssText = 'font-size:13px;color:var(--text-dim);line-height:2;margin-bottom:1.5rem;';
+  desc.textContent = '플랫폼에 불빛이 보였다. 열차가 천천히 들어오고 있었다.\n운행이 중단된 지 1년이 지났다. 그래도 왔다.';
+  go.insertBefore(desc, go.querySelector('.restart-btn'));
+
+  const choicesEl = document.createElement('div');
+  choicesEl.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem;';
+
+  const btn1 = document.createElement('button');
+  btn1.className = 'restart-btn';
+  btn1.textContent = '열차에 탄다';
+  btn1.onclick = () => {
+    go.className = 'ending';
+    $('go-title').textContent = '떠났다';
+    desc.textContent = '열차가 떠났다.\n역사 불이 꺼졌다.\n누군가 끄고 간 것 같았다.\n\n' + state.day + '일을 버텼다.';
+    choicesEl.remove();
+  };
+
+  const btn2 = document.createElement('button');
+  btn2.className = 'restart-btn';
+  btn2.textContent = '열차를 보낸다';
+  btn2.onclick = () => {
+    go.className = 'ending';
+    $('go-title').textContent = '봄을 기다린다';
+    desc.textContent = '열차가 멀어졌다.\n당신은 역사 안으로 돌아왔다.\n아직 보낼 편지가 있다.\n난로에 석탄을 한 장 더 넣었다.\n\n' + state.day + '일째.';
+    choicesEl.remove();
+  };
+
+  choicesEl.appendChild(btn1);
+  choicesEl.appendChild(btn2);
+  go.insertBefore(choicesEl, go.querySelector('.restart-btn'));
+}
+
+function resetGame(){
+  state.coal=12; state.trust=5; state.suspicion=0; state.warmth=5;
+  state.day=1; state.minutes=23*60; state.eventPending=false;
+  state.unlocked={platform:false, outside:false};
+  state.inventory=[];
+  state.collection=[];
+  state.flags={notebookRead:false, trainFlag:0, oldManCount:0, oldManWarm:false, childCount:0, childWarm:false, coupleCount:0, coupleWarm:false, photoCount:0, photoWarm:false, dogCount:0, dogWarm:false, motherRecognized:false, motherFarewell:false, lettersBurned:0, innerRoomOpened:false, innerRoomDesk:false, innerRoomDrawer:false};
+  // 탭 초기화
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.remove('active','unlocked-new');
+    if(b.dataset.tab !== 'inside') b.classList.add('locked');
+  });
+  document.querySelector('[data-tab="inside"]').classList.add('active');
+  document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+  $('tab-inside').style.display = 'flex';
+  // 인벤토리 토글 닫기
+  $('inventory-content').style.display = 'none';
+  $('inv-arrow').classList.remove('open');
+  updateInventory();
+  usedEvents=[]; usedDayEvents=[]; gatherCooldown=false; actionCount=0; scheduledEvents=[];
+  if(cooldownInterval) clearInterval(cooldownInterval);
+  // 안쪽 방 버튼 초기화
+  $('btn-inner-room').style.display = 'none';
+  $('btn-inner-room').disabled = true;
+  if(cooldownInterval) clearInterval(cooldownInterval);
+  $('main').style.display='block';
+  $('gameover').style.display='none';
+  $('event-box').style.display='none';
+  $('choices').innerHTML='';
+  
+  $('log').innerHTML='<div class="log-line current">1997년 겨울. 폐선 통보를 받은 산골 간이역.</div><div class="log-line current">당신은 자신이 누군지도, 왜 여기 있는지도 모른다. 그냥 남아 있다.</div><div class="log-line current">석탄 난로가 꺼지면 오래 버티지 못할 것 같은 기분이 든다.</div>';
+  $('btn-gather').disabled=false;
+  $('cooldown-row').style.display='none';
+  updateStats();
+}
+
+$('btn-stoke').onclick = ()=>{
+  if(state.eventPending) return;
+  if(state.coal < 2){ log('석탄이 너무 부족하다. 한 줌만 넣었다. (−1장)'); state.coal=Math.max(0,state.coal-1); }
+  else { state.coal-=2; state.warmth=5; log('난로에 석탄 2장을 밀어 넣었다. 역사가 한기를 조금 잃는다.'); }
+  updateStats();
+  if(state.coal<=0){ triggerGameOver('석탄 소진'); return; }
+  advanceDay(15);
+};
+
+function startGatherCooldown(sec) {
+  sec = sec || 8;
+  gatherCooldown = true;
+  $('btn-gather').disabled = true;
+  const row = $('cooldown-row'); row.style.display = 'flex';
+  const bar = $('cooldown-bar'); bar.style.width = '100%';
+  $('cooldown-label').textContent = sec + 's';
+  bar.style.transition = 'width ' + sec + 's linear';
+  setTimeout(() => { bar.style.width = '0%'; }, 50);
+  cooldownInterval = setInterval(() => {
+    sec--;
+    $('cooldown-label').textContent = sec + 's';
+    if(sec <= 0){
+      clearInterval(cooldownInterval);
+      gatherCooldown = false;
+      $('btn-gather').disabled = false;
+      row.style.display = 'none';
+    }
+  }, 1000);
+}
+
+$('btn-gather').onclick = ()=>{
+  if(gatherCooldown) return;
+  if(state.eventPending) return;
+  const roll = Math.random();
+  if(roll < 0.15){ const lost=1+Math.floor(Math.random()*2); state.coal=Math.max(0,state.coal-lost); log('창고 선반이 무너졌다. 오히려 석탄 ' + lost + '장을 잃었다.'); if(state.coal<=0){triggerGameOver('석탄 소진');return;} }
+  else { const found=1+Math.floor(Math.random()*3); state.coal+=found; log('창고 구석에서 석탄 ' + found + '장을 찾았다.'); }
+  updateStats();
+  startGatherCooldown(8);
+  advanceDay(45);
+};
+
+$('btn-wait').onclick = ()=>{
+  if(state.eventPending) return;
+  state.warmth=Math.max(0,state.warmth-1);
+  if(state.warmth===0){
+    log('역사가 서서히 식어간다. 석탄을 넣어야 한다.');
+  } else {
+    const h = Math.floor(state.minutes/60) % 24;
+    let m;
+    if(state.suspicion >= 5){
+      // 업 높을 때 불안한 묘사
+      const darkMsgs = [
+        '무언가 당신을 보고 있는 것 같다. 창밖을 봤지만 아무것도 없다.',
+        '이상한 소리가 들렸다. 귀를 기울였지만 이내 멈췄다.',
+        '난로 불꽃이 이유 없이 흔들렸다. 바람이 없는데.',
+        '발소리가 들렸다. 혼자인데.',
+        '거울을 보지 않는 게 낫겠다는 생각이 든다. 이유는 모른다.',
+      ];
+      m = darkMsgs;
+    } else if(h >= 21 || h < 5){
+      m=['밖에서 바람이 운다.','먼 산에서 무언가 울었다.','플랫폼에 눈이 조금 쌓인다.','대합실 시계가 째깍거린다.'];
+    } else if(h < 12){
+      m=['아침 햇살이 창문에 걸린다.','멀리서 까치 소리가 들린다.','플랫폼에 서리가 내려 있다.','라디오에서 뉴스가 흘러나온다.'];
+    } else {
+      m=['오후 햇빛이 역사 안으로 비스듬히 든다.','기차가 없는 역은 너무 조용하다.','바람이 간판을 흔든다.','역사 밖 나무가 흔들린다.'];
+    }
+    log(m[Math.floor(Math.random()*m.length)]);
+  }
+  advanceDay(60);
+};
+
+$('btn-office').onclick = ()=>{
+  if(state.eventPending) return;
+  const h = Math.floor(state.minutes/60) % 24;
+  const isNight = h >= 21 || h < 7;
+
+  // 오래된 수첩 소지 시 가끔 반응
+  if(hasItem('old_notebook') && Math.random() < 0.25){
+    log('오래된 수첩을 다시 펼쳤다. 역 이름이 바뀐 날짜가 적혀 있다. 폐선 통보 하루 전이다. 우연일 수도 있다.');
+    state.suspicion++;
+    updateStats();
+    advanceDay(30);
+    return;
+  }
+  // 오래된 사진 소지 시 가끔 반응
+  if(hasItem('old_photo') && Math.random() < 0.25){
+    log('오래된 역 사진을 다시 꺼냈다. 그 사람이 서 있던 자리가 지금 내가 서 있는 자리다.');
+    state.suspicion++;
+    updateStats();
+    advanceDay(30);
+    return;
+  }
+
+  // 수첩 보유 시 가끔 새 글씨 이벤트
+  if(hasItem('notebook') && Math.random() < 0.3){
+    const notebookEntries = [
+      '어젯밤 손님에 대한 기록이 생겼다. 당신이 어떻게 대했는지 적혀 있다. 필체가 당신 것이 아니다.',
+      '오늘 날짜 아래에 한 줄이 있다. "아직 기억하지 못하고 있음." 누가 썼는지 모른다.',
+      '빈칸이었던 페이지에 글씨가 생겼다. 이 역의 이전 이름이 적혀 있다.',
+      '당신이 태운 편지의 수신인 이름이 적혀 있다. 어떻게 알았는지 모른다.',
+      '마지막 페이지에 새 문장이 생겼다. "곧 열차가 온다." 날짜가 없다.',
+    ];
+    log('수첩을 펼쳤다. 새 글씨가 생겨 있다.');
+    setTimeout(() => showSubEvent({
+      tag: '수첩',
+      desc: notebookEntries[Math.floor(Math.random()*notebookEntries.length)],
+      choices: [
+        { text: '계속 읽는다', fn: () => {
+          state.suspicion++;
+          log('더 읽을수록 모르는 것이 많아진다. 수첩을 덮었다.');
+        }},
+        { text: '덮어둔다', fn: () => {
+          log('읽지 않는 게 나을 것 같았다. 서랍에 넣었다.');
+        }},
+      ]
+    }), 300);
+    return;
+  }
+
+  const msgs = isNight ? [
+    '서랍을 열어봤다. 오래된 도장과 인주가 있다. 쓸 일이 없다.',
+    '벽에 걸린 달력이 폐선 한 달 전에 멈춰 있다. 누가 멈췄는지 모른다.',
+    '라디오를 켰다. 잡음만 들린다. 주파수를 돌리다 꺼버렸다.',
+  ] : [
+    '역무실 한쪽 벽에 시간표가 붙어 있다. 모든 칸이 비어 있다.',
+    '먼지가 쌓인 전화기. 수화기를 들었지만 신호음이 없다.',
+    '서랍 안에 누군가의 도시락통이 있다. 오래됐지만 깨끗하다.',
+    '창문으로 플랫폼이 보인다. 아무도 없다. 늘 그렇다.',
+  ];
+
+  // 업 5 이상 — 가끔 불안한 묘사 삽입
+  if(state.suspicion >= 5 && Math.random() < 0.4){
+    const darkMsgs = [
+      '역무실 거울을 봤다. 잠깐 다른 사람이 비친 것 같았다. 다시 보니 당신이었다.',
+      '서랍을 열었는데 안에 뭔가 새로 들어와 있었다. 당신이 넣은 게 아니다.',
+      '벽에 낙서가 있다. 어제는 없었다. "아직도 모르냐"고 적혀 있다.',
+      '전화기가 울렸다. 받았지만 아무 소리가 없었다. 끊으려 하니 먼저 끊어졌다.',
+    ];
+    log(darkMsgs[Math.floor(Math.random()*darkMsgs.length)]);
+    updateStats();
+    advanceDay(30);
+    return;
+  }
+  // 개 발자국 후속 묘사
+  if(state.flags.dogCount >= 2 && Math.random() < 0.3){
+    log('어젯밤 문 앞 발자국이 생각났다. 역무실 바닥을 보니 비슷한 흔적이 있다. 개 발자국이 아니다.');
+    state.suspicion++;
+    updateStats();
+    advanceDay(30);
+    return;
+  }
+  log(msgs[Math.floor(Math.random()*msgs.length)]);
+  updateStats();
+  advanceDay(30);
+};
+
+$('btn-platform').onclick = ()=>{
+  if(state.eventPending) return;
+  // 오래된 역 사진 소지 시 플랫폼에서 반응
+  if(hasItem('old_photo') && Math.random() < 0.3){
+    log('사진을 꺼내 들고 플랫폼을 둘러봤다. 사진 속 풍경과 거의 같다. 달라진 건 사람이 없다는 것뿐이다.');
+    state.flags.trainFlag = Math.min(state.flags.trainFlag+1, 3);
+    updateStats();
+    advanceDay(60);
+    return;
+  }
+
+  // 소각로 분기 — 항상 선택지로 제공
+  log('플랫폼으로 나왔다. 플랫폼 끝에 오래된 소각로가 있다.');
+  setTimeout(() => showSubEvent({
+    tag: '플랫폼',
+    desc: '어떻게 할까.',
+    choices: [
+      { text: '소각로 앞에 선다', fn: () => {
+        // 편지 있으면 태우기, 없으면 청소
+        if(hasItem('letter_stranger')){
+          setTimeout(() => showSubEvent({
+            tag: '소각로',
+            desc: '소지품에서 편지를 꺼냈다. 소각로 안에 불씨가 남아 있다.',
+            choices: [
+              { text: '편지를 태운다', fn: () => {
+                removeItem('letter_stranger');
+                state.trust++;
+                state.suspicion = Math.max(0, state.suspicion - 1);
+                state.flags.trainFlag = Math.min(state.flags.trainFlag+1, 3);
+                state.flags.lettersBurned = (state.flags.lettersBurned || 0) + 1;
+                log('편지가 타오르며 연기가 하늘로 올라갔다. 저쪽으로 닿았으면 좋겠다. 소각로 안이 잠깐 밝아졌다가 꺼졌다. 업이 조금 가벼워진 것 같다.');
+                updateStats();
+              }},
+              { text: '그냥 청소만 한다', fn: () => {
+                const items = _incineratorClean();
+                log(items);
+              }},
+            ]
+          }), 300);
+        } else {
+          const items = _incineratorClean();
+          log(items);
+        }
+      }},
+      { text: '플랫폼을 둘러본다', fn: () => {
+        const h = Math.floor(state.minutes/60) % 24;
+        const isNight = h >= 21 || h < 7;
+        _platformExplore(isNight);
+      }},
+    ]
+  }), 300);
+  updateStats();
+  advanceDay(60);
+};
+
+function _incineratorClean(){
+  const roll = Math.random();
+  if(roll < 0.25){
+    const found = 1 + Math.floor(Math.random()*2);
+    state.coal += found;
+    updateStats();
+    return '소각로 바닥에 타다 남은 석탄 ' + found + '장이 있었다. 긁어냈다.';
+  } else if(roll < 0.45){
+    const relics = [
+      { id:'ring', label:'누군가의 반지', msg:'재 속에서 반지 하나가 나왔다. 글자가 새겨져 있지만 읽기 어렵다.' },
+      { id:'hairpin', label:'누군가의 머리핀', msg:'작은 머리핀이 있었다. 불에 그슬렸지만 모양은 남아 있다.' },
+      { id:'letter_fragment', label:'타고 남은 편지 조각', msg:'완전히 타지 않은 편지 조각이 있었다. 글씨 몇 자만 보인다. "...기다리고..."' },
+    ];
+    const relic = relics[Math.floor(Math.random()*relics.length)];
+    if(!hasItem(relic.id) && !hasCollection(relic.id)){
+      addCollection(relic.id, relic.label);
+      state.suspicion = Math.max(0, state.suspicion - 1);
+      return relic.msg + ' 누군가의 흔적을 정리하니 업이 조금 가벼워진 것 같다.';
+    }
+    state.suspicion = Math.max(0, state.suspicion - 1);
+    return '소각로 안을 청소했다. 재가 조금 쌓여 있었다. 업이 조금 가벼워진 것 같다.';
+  } else {
+    return '소각로 안을 청소했다. 누군가 최근에도 쓴 것 같다.';
+  }
+}
+
+function _platformExplore(isNight){
+  const h = Math.floor(state.minutes/60) % 24;
+  const night = h >= 21 || h < 7;
+
+  // 낮/밤 불문 30% 확률 표 발견
+  if(Math.random() < 0.3){
+    const ticketItem = state.inventory.find(i => i.id === 'platform_ticket');
+    if(ticketItem){
+      ticketItem.count = (ticketItem.count || 1) + 1;
+      ticketItem.label = '승차권 ' + ticketItem.count + '장';
+      updateInventory();
+      log('플랫폼 바닥에 승차권이 또 있었다. 오늘 날짜가 찍혀 있다.');
+    } else {
+      state.inventory.push({id:'platform_ticket', label:'승차권 1장', count:1});
+      updateInventory();
+      log('플랫폼 바닥에 승차권 한 장이 떨어져 있다. 오늘 날짜. 목적지란이 비어 있다.');
+    }
+    return;
+  }
+
+  if(!night){
+    const roll = Math.random();
+    if(roll < 0.2){
+      log('플랫폼 눈을 치우다 미끄러졌다. 빈손으로 돌아왔다.');
+      state.warmth = Math.max(state.warmth-1, 0);
+    } else {
+      const found = 1 + Math.floor(Math.random()*3);
+      state.coal += found;
+      const msgs = [
+        '플랫폼 구석에서 석탄 ' + found + '장을 찾았다. 누가 두고 간 건지 모른다.',
+        '선로 옆에 석탄 ' + found + '장이 흩어져 있었다. 마지막 열차가 흘린 것 같다.',
+        '대합실 벤치 아래에서 석탄 ' + found + '장을 찾았다.',
+      ];
+      log(msgs[Math.floor(Math.random()*msgs.length)]);
+    }
+  } else {
+    state.warmth = Math.max(state.warmth-1, 0);
+    if(Math.random() < 0.4 && state.flags.trainFlag < 3){
+      const clues = [
+        '선로 위에 오래된 승차권 한 장이 있었다. 날짜가 없다.',
+        '플랫폼 끝에 누군가 서 있던 발자국이 있었다. 선로 쪽으로 향한다.',
+        '대합실 시간표가 바뀌어 있다. 오늘 밤 열차 한 대가 적혀 있다.',
+      ];
+      log(clues[state.flags.trainFlag]);
+      state.flags.trainFlag++;
+    } else {
+      const nightMsgs = [
+        '플랫폼에 눈이 내리고 있다. 발자국이 없다.',
+        '선로가 어둠 속으로 사라진다. 어디로 가는지 모른다.',
+        '플랫폼 조명이 깜빡였다. 바람 때문인지 모른다.',
+        '벤치에 누군가 앉았다 간 흔적이 있다. 눈이 눌려 있다.',
+      ];
+      log(nightMsgs[Math.floor(Math.random()*nightMsgs.length)]);
+    }
+  }
+  updateStats();
+}
+
+$('btn-outside').onclick = ()=>{
+  if(state.eventPending) return;
+  state.warmth = Math.max(state.warmth-1, 0);
+  const roll = Math.random();
+  // 반복되는 풍경 묘사 — 어디에도 도달할 수 없음
+  const loopMsgs = [
+    '역 앞 길을 따라 걸었다. 한참 걷다 보니 같은 나무가 또 보였다. 역으로 돌아왔다.',
+    '선로를 따라 걸어봤다. 안개가 짙어졌다. 방향을 잃을 것 같아 돌아왔다. 역이 바로 뒤에 있었다.',
+    '눈밭을 가로질렀다. 발자국이 이미 나 있었다. 내 것 같기도 했다. 역으로 돌아왔다.',
+    '어딘가에 도달할 수 있을 것 같았다. 한 시간을 걸었는데 역 간판이 다시 보였다.',
+    '멀리 불빛이 보였다. 가까이 갈수록 사라졌다. 결국 역 창문 불빛이었다.',
+  ];
+  if(roll < 0.2){
+    // 가끔 석탄 발견
+    const found = 1 + Math.floor(Math.random()*2);
+    state.coal += found;
+    log(loopMsgs[Math.floor(Math.random()*loopMsgs.length)] + ' 돌아오는 길에 석탄 ' + found + '장을 주웠다.');
+  } else {
+    log(loopMsgs[Math.floor(Math.random()*loopMsgs.length)]);
+  }
+  updateStats();
+  advanceDay(120);
+};
+
+$('btn-inner-room').onclick = ()=>{
+  if(state.eventPending) return;
+
+  if(!state.flags.innerRoomOpened){
+    state.flags.innerRoomOpened = true;
+    log('열쇠가 맞았다. 문이 삐걱거리며 열렸다. 오래 잠겨 있던 것 같다.');
+  } else {
+    log('안쪽 방으로 들어왔다. 먼지 냄새가 난다.');
+  }
+
+  const hasDesk = !state.flags.innerRoomDesk;
+  const hasDrawer = !state.flags.innerRoomDrawer;
+
+  if(hasDesk || hasDrawer){
+    const choices = [];
+    if(hasDesk){
+      choices.push({ text: '탁자를 살펴본다', fn: () => {
+        state.flags.innerRoomDesk = true;
+        log('역 개통 당시 사진이 있다. 플랫폼 앞에 사람들이 서 있다. 그 중 한 명이 당신을 닮았다.');
+        state.suspicion += 2;
+        addCollection('old_photo', '오래된 역 사진');
+        updateStats();
+      }});
+    }
+    if(hasDrawer){
+      choices.push({ text: '서랍을 열어본다', fn: () => {
+        state.flags.innerRoomDrawer = true;
+        log('수첩 한 권이 더 있다. 전임 역무원 것이 아니다. 더 오래됐다. 첫 페이지에 이 역의 이름이 적혀 있다. 지금 간판과 다르다.');
+        state.suspicion += 2;
+        addCollection('old_notebook', '오래된 수첩');
+        state.flags.trainFlag = Math.min(state.flags.trainFlag+1, 3);
+        updateStats();
+      }});
+    }
+    choices.push({ text: '그냥 나온다', fn: () => {
+      log('문을 다시 닫았다.');
+    }});
+
+    setTimeout(() => showSubEvent({
+      tag: '안쪽 방',
+      desc: hasDesk && hasDrawer ? '먼지가 쌓인 작은 방. 탁자와 서랍이 있다.' : hasDesk ? '탁자가 눈에 띈다.' : '서랍이 아직 안 열려 있다.',
+      choices
+    }), 300);
+  } else {
+    const revisitMsgs = [
+      '오래된 역 사진을 다시 봤다. 그 사람이 당신인지 아직도 모른다.',
+      '오래된 수첩을 다시 펼쳤다. 역 이름이 바뀐 날짜가 적혀 있다. 폐선 통보 하루 전이다.',
+      '방 한쪽에 접힌 담요가 있다. 누군가 여기서 잔 것 같다.',
+      '창문이 하나 있다. 밖으로 플랫폼이 보인다. 이상하게도 각도가 맞지 않는다.',
+    ];
+    log(revisitMsgs[Math.floor(Math.random()*revisitMsgs.length)]);
+  }
+  updateStats();
+  advanceDay(45);
+};
+
+updateStats();
+</script>
+</body>
+</html>
